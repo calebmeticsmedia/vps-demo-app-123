@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>VPS Demo App</title>
+  <style>
+    body{font-family:system-ui,Arial;padding:2rem;max-width:720px;margin:auto;}
+    .row{margin:.75rem 0;}
+    button{padding:.6rem 1rem;cursor:pointer}
+    input{padding:.5rem;width:260px}
+    .ok{color:green}.err{color:#b00020}
+    .card{padding:1rem;border:1px solid #ddd;border-radius:12px;margin:1rem 0}
+  </style>
+</head>
+<body>
+  <h1>VPS Demo App</h1>
+  <p>This page is served by Node.js on your VPS. Click a button or submit the form to hit real API routes.</p>
+
+  <div class="card">
+    <h3>Buttons</h3>
+    <div class="row">
+      <button id="pingBtn">Ping Server</button>
+      <span id="pingMsg"></span>
+    </div>
+    <div class="row">
+      <button id="ctaBtn">Track Click</button>
+      <span id="ctaMsg"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Signup (Demo)</h3>
+    <form id="signupForm">
+      <input id="email" type="email" placeholder="you@example.com" required />
+      <button type="submit">Submit</button>
+      <span id="signupMsg"></span>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>Metrics (Live)</h3>
+    <pre id="metricsBox">Loading…</pre>
+  </div>
+
+<script>
+const $ = (id)=>document.getElementById(id);
+async function getJSON(url, opts){ const r=await fetch(url,opts); return r.json(); }
+
+$('pingBtn').onclick = async () => {
+  try{ const data = await getJSON('/api/ping');
+    $('pingMsg').textContent = data.message; $('pingMsg').className='ok';
+  }catch{ $('pingMsg').textContent='Error'; $('pingMsg').className='err'; }
+};
+
+$('ctaBtn').onclick = async () => {
+  try{ const data = await getJSON('/api/click', { method:'POST' });
+    $('ctaMsg').textContent = `Total clicks: ${data.totalClicks}`; $('ctaMsg').className='ok';
+    loadMetrics();
+  }catch{ $('ctaMsg').textContent='Error'; $('ctaMsg').className='err'; }
+};
+
+$('signupForm').onsubmit = async (e)=>{
+  e.preventDefault();
+  const email = $('email').value.trim();
+  try{
+    const data = await getJSON('/api/signup', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email })
+    });
+    $('signupMsg').textContent = data.message || 'Saved'; $('signupMsg').className='ok';
+    $('email').value=''; loadMetrics();
+  }catch{ $('signupMsg').textContent='Error'; $('signupMsg').className='err'; }
+};
+
+async function loadMetrics(){
+  try{ const m = await getJSON('/api/metrics');
+    $('metricsBox').textContent = JSON.stringify(m, null, 2);
+  }catch{ $('metricsBox').textContent='Error loading metrics'; }
+}
+loadMetrics();
+</script>
+</body>
+</html>
